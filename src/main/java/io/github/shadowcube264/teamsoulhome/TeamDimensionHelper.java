@@ -7,7 +7,7 @@ import leaf.soulhome.utils.PlayerHelper;
 import leaf.soulhome.utils.ResourceLocationHelper;
 import leaf.soulhome.utils.TeleportHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -22,11 +22,15 @@ import static leaf.soulhome.constants.Constants.NBTKeys.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import dev.ftb.mods.ftbteams.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI.API;
+import dev.ftb.mods.ftbteams.api.Team;
 
 public class TeamDimensionHelper extends DimensionHelper
 {
+    private static API teamAPI = null;
 
     //Infamous code thief ShadowCube264 strikes again!
     
@@ -51,7 +55,7 @@ public class TeamDimensionHelper extends DimensionHelper
             //get the dimension key, based on the info we saved.
             ResourceKey<Level> destinationKey =
                     ResourceKey.create(
-                            Registry.DIMENSION_REGISTRY,
+                            Registries.DIMENSION,
                             new ResourceLocation(
                                     soulNBT.getString(LAST_DIMENSION_MOD_ID),
                                     soulNBT.getString(LAST_DIMENSION_MOD_DIMENSION))
@@ -82,7 +86,22 @@ public class TeamDimensionHelper extends DimensionHelper
         {
             //now we can go to the soul
             //will create the dimension for that user if it's the first time accessing it
-            destination = getOrCreateSoulDimension(FTBTeamsAPI.getPlayerTeamID(playerEntity.getUUID()).toString(), server);
+            if (teamAPI == null)
+            {
+                teamAPI = FTBTeamsAPI.api();
+            }
+
+            Optional<Team> maybeTeam = teamAPI.getManager().getTeamForPlayerID(playerEntity.getUUID());
+            if (maybeTeam.isPresent())
+            {
+                Team team = maybeTeam.get();
+                destination = getOrCreateSoulDimension(team.getId().toString(), server);
+            }
+            //Use existing dimension on a failure
+            else
+            {
+                destination = server.getLevel(playerEntity.level().dimension());
+            }
 
         }
 
@@ -133,7 +152,7 @@ public class TeamDimensionHelper extends DimensionHelper
 
         //the key used in the map, Map<key,world>
         //if we've already made the dimension, we can grab it straight from server.getLevel
-        ResourceKey<Level> worldKey = ResourceKey.create(Registry.DIMENSION_REGISTRY, loc);
+        ResourceKey<Level> worldKey = ResourceKey.create(Registries.DIMENSION, loc);
 
         //check to find our special dimension
         ServerLevel soulDimensionForPlayer = server.getLevel(worldKey);

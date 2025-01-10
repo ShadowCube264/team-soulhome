@@ -2,11 +2,14 @@ package io.github.shadowcube264.teamsoulhome;
 
 import javax.annotation.Nonnull;
 
-import com.mojang.math.Vector3f;
+import org.joml.Vector3f;
 
 import dev.ftb.mods.ftblibrary.icon.Color4I;
-import dev.ftb.mods.ftbteams.FTBTeamsAPI;
-import dev.ftb.mods.ftbteams.data.Team;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.api.Team;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI.API;
+import dev.ftb.mods.ftbteams.api.client.ClientTeamManager;
+import dev.ftb.mods.ftbteams.api.property.TeamProperties;
 
 import java.util.List;
 
@@ -31,12 +34,25 @@ public class TeamKeyItem extends SoulKeyItem
 
     final int USE_TICKS_REQUIRED = 80;
 
+    private API teamAPI = null;
+    private ClientTeamManager clientManager = null;
+
     @Override
     @OnlyIn(Dist.CLIENT)
     public void onUseTick(Level world, LivingEntity livingEntity, ItemStack stack, int count)
     {
-        if (livingEntity.level.isClientSide)
+        if (livingEntity.level().isClientSide)
         {
+            if (teamAPI == null)
+            {
+                teamAPI = FTBTeamsAPI.api();
+                clientManager = teamAPI.getClientManager();
+            }
+            if (!clientManager.isValid())
+            {
+                clientManager = teamAPI.getClientManager();
+            }
+
             float percentage = MathUtils.clamp01((USE_TICKS_REQUIRED - count) / (float) USE_TICKS_REQUIRED);
             int particlesToCreate = Mth.floor((percentage * percentage * percentage) * USE_TICKS_REQUIRED);
 
@@ -44,25 +60,32 @@ public class TeamKeyItem extends SoulKeyItem
             float bits = 360f / particlesToCreate;
             float radius = percentage * maxRadius;
 
-            for (int i = particlesToCreate; i >= 0; --i)
-            {
-                float ang = (bits * i);// + (Math.random() * 10);
-                
-                Team team = FTBTeamsAPI.getPlayerTeam(livingEntity.getUUID());
+            Team team = clientManager.selfTeam();
 
-                if (team != null)
+            if (team != null)
+            {
+                Color4I teamColour = team.getProperty(TeamProperties.COLOR);
+                Vector3f colorVec = new Vector3f(teamColour.redf(),teamColour.greenf(),teamColour.bluef());
+
+                for (int i = particlesToCreate; i >= 0; --i)
                 {
-                    Color4I teamColour = Color4I.rgb(team.getColor());
-                    livingEntity.level.addParticle(
-                            new DustParticleOptions(new Vector3f(teamColour.redf(),teamColour.greenf(),teamColour.bluef()),2),
+                    float ang = (bits * i);// + (Math.random() * 10);
+                    
+                    livingEntity.level().addParticle(
+                            new DustParticleOptions(colorVec,2.0f),
                             livingEntity.getX() + Mth.sin(Mth.wrapDegrees(ang)) * radius,
                             livingEntity.getY(),
                             livingEntity.getZ() + Mth.cos(Mth.wrapDegrees(ang)) * radius,
                             0.0D,
                             0.0D,
                             0.0D);
-                } else {
-                    livingEntity.level.addParticle(
+                }
+            } else {
+                for (int i = particlesToCreate; i >= 0; --i)
+                {
+                    float ang = (bits * i);// + (Math.random() * 10);
+
+                    livingEntity.level().addParticle(
                             ParticleTypes.SMOKE,
                             livingEntity.getX() + Mth.sin(Mth.wrapDegrees(ang)) * radius,
                             livingEntity.getY(),
@@ -79,7 +102,7 @@ public class TeamKeyItem extends SoulKeyItem
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level world, LivingEntity livingEntity)
     {
-        if (!livingEntity.level.isClientSide && livingEntity instanceof Player)
+        if (!livingEntity.level().isClientSide && livingEntity instanceof Player)
         {
             //find all creatures in range
             AABB areaOfEffect = new AABB(livingEntity.blockPosition()).inflate(2.5d);
