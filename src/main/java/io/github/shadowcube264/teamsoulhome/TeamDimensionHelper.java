@@ -23,6 +23,7 @@ import static leaf.soulhome.constants.Constants.NBTKeys.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI.API;
@@ -32,9 +33,43 @@ public class TeamDimensionHelper extends DimensionHelper
 {
     private static API teamAPI = null;
 
-    //Infamous code thief ShadowCube264 strikes again!
+    //Variant for the normal team key
+    public static void FlipDimension(Player playerEntity, MinecraftServer server, List<Entity> entitiesInRange) {
+        ServerLevel soulWorld;
+        if (teamAPI == null)
+        {
+            teamAPI = FTBTeamsAPI.api();
+        }
+        Optional<Team> maybeTeam = teamAPI.getManager().getTeamForPlayerID(playerEntity.getUUID());
+
+        //No point making a dimension if not travelling there
+        if (maybeTeam.isPresent() && !isInSoulDimension(playerEntity)) {
+            Team team = maybeTeam.get();
+            soulWorld = getOrCreateSoulDimension(team.getId().toString(), server);
+        }
+        //Use existing dimension on a failure
+        else {
+            soulWorld = server.getLevel(playerEntity.level().dimension());
+        }
+        
+        FlipDimension(playerEntity, server, entitiesInRange, soulWorld);
+    }
+
+    //Variant for the lost soulkey
+    public static void FlipDimension(Player playerEntity, MinecraftServer server, List<Entity> entitiesInRange, UUID soulID) {
+        ServerLevel soulWorld;
+        if (!isInSoulDimension(playerEntity)) {
+            soulWorld = getOrCreateSoulDimension(soulID.toString(), server);
+        }
+        //Use existing dimension on a failure
+        else {
+            soulWorld = server.getLevel(playerEntity.level().dimension());
+        }
+
+        FlipDimension(playerEntity, server, entitiesInRange, soulWorld);
+    }
     
-    public static void FlipDimension(Player playerEntity, MinecraftServer server, List<Entity> entitiesInRange)
+    public static void FlipDimension(Player playerEntity, MinecraftServer server, List<Entity> entitiesInRange, ServerLevel soulWorld)
     {
         //get (or create if this is the first time) our little save
         CompoundTag soulNBT = PlayerHelper.getPersistentTag(playerEntity, SoulHome.SOULHOME_LOC.toString());
@@ -86,23 +121,7 @@ public class TeamDimensionHelper extends DimensionHelper
         {
             //now we can go to the soul
             //will create the dimension for that user if it's the first time accessing it
-            if (teamAPI == null)
-            {
-                teamAPI = FTBTeamsAPI.api();
-            }
-
-            Optional<Team> maybeTeam = teamAPI.getManager().getTeamForPlayerID(playerEntity.getUUID());
-            if (maybeTeam.isPresent())
-            {
-                Team team = maybeTeam.get();
-                destination = getOrCreateSoulDimension(team.getId().toString(), server);
-            }
-            //Use existing dimension on a failure
-            else
-            {
-                destination = server.getLevel(playerEntity.level().dimension());
-            }
-
+            destination = soulWorld;
         }
 
         //dimension location eg minecraft:overworld

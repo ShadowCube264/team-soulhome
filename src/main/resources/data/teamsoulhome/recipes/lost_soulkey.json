@@ -1,0 +1,19 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+      "S  ",
+      "SS ",
+      "  E"
+    ],
+    "key": {
+      "S": {
+        "item": "minecraft:echo_shard"
+      },
+      "E": {
+        "item": "minecraft:ender_pearl"
+      }
+    },
+    "result": {
+      "item": "teamsoulhome:lost_soulkey"
+    }
+}

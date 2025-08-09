@@ -84,10 +84,14 @@ minecraft {
         client {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', mod_id
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
         }
 
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
             args '--nogui'
         }
 
@@ -126,6 +130,15 @@ repositories {
             includeGroup "curse.maven"
         }
     }
+    maven {
+        url "https://maven.architectury.dev"
+        content {
+            includeGroup "dev.architectury"
+        }
+    }
+    flatDir {
+        dir "libs"
+    }
 }
 
 dependencies {
@@ -150,9 +163,10 @@ dependencies {
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
-    implementation 'curse.maven:ftblib-404465:6016763'
-    implementation 'curse.maven:ftbteams-404468:5267190'
-    implementation files('libs/SoulHome-Mod-1.20.1-47.3.0-b12.jar')
+    implementation fg.deobf('curse.maven:ftblib-404465:6016763')
+    implementation fg.deobf('curse.maven:ftbteams-404468:5267190')
+    implementation fg.deobf('blank:SoulHome-Mod-1.20.1:47.3.0-b12')
+    implementation fg.deobf('dev.architectury:architectury-forge:9.2.14')
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

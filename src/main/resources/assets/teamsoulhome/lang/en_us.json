@@ -1,3 +1,7 @@
 {
-    "item.teamsoulhome.teamkey": "Team Soulkey"
+    "item.teamsoulhome.teamkey": "Team Soulkey",
+    "item.teamsoulhome.lost_soulkey": "Lost Soulkey",
+    "item.teamsoulhome.lost_soulkey.tooltip": "§3Return to a lost team's soul once more",
+    "message.teamsoulhome.no_team": "§3There are no lost souls you may visit",
+    "message.teamsoulhome.wrong_dim": "§3This key cannot be used within a soul"
 }
